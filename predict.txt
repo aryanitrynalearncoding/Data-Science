@@ -1,0 +1,63 @@
+**// Reading the file**
+import pandas as pd
+
+df = pd.read_csv("C:/MLintern/Dataset.xlsx.csv")
+df.head()
+**//preprocessing stuff**
+
+df_model = df.drop(columns=[
+    "Restaurant ID", "Restaurant Name", "Address", "Locality", "Locality Verbose", 
+    "Rating color", "Rating text"
+])
+
+df_model = df_model.dropna(subset=["Aggregate rating", "Cuisines"])
+df_model["Cuisines"] = df_model["Cuisines"].fillna("Unknown")
+
+label_encoders = {}
+for col in df_model.select_dtypes(include='object').columns:
+    le = LabelEncoder()
+    df_model[col] = le.fit_transform(df_model[col])
+    label_encoders[col] = le
+
+print(df_model)
+
+//**using linear regression to train and test the model**
+
+from sklearn.linear_model import LinearRegression
+X = df_model.drop("Aggregate rating", axis=1)
+y = df_model["Aggregate rating"]
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+model = LinearRegression()
+model.fit(X_train, y_train)
+y_pred = model.predict(X_test)
+print(y_pred)
+//to reduce the error in prediction
+mse = mean_squared_error(y_test, y_pred)
+r2 = r2_score(y_test, y_pred)
+
+print(f"Mean Squared Error: {mse:.4f}")
+print(f"R² Score: {r2:.4f}")
+
+**//analyze the most
+influential features affecting restaurant ratings.**
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Assuming your model is trained and 'X' is your feature set
+feature_importances = pd.Series(abs(model.coef_), index=X.columns).sort_values(ascending=False)
+
+# Print the top 10 feature importances
+print(feature_importances.head(10))
+
+# Create the bar plot
+plt.figure(figsize=(10, 5))
+sns.barplot(x=feature_importances.head(5), y=feature_importances.head(5).index)
+plt.title("Top 5 Feature Importances")
+plt.xlabel("Importance Score")
+plt.ylabel("Features")
+plt.tight_layout()
+plt.show()
